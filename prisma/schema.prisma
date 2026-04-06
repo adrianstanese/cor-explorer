@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// COR hierarchical structure: grupa majoră (1 digit)
+model GrupaMajora {
+  code        String @id @db.VarChar(1)
+  name        String @db.VarChar(500)
+  description String @default("") @db.Text
+
+  subgrupe SubgrupaMajora[]
+  ocupatii Ocupatie[]
+
+  @@map("grupe_majore")
+}
+
+/// Subgrupa majoră (2 digits)
+model SubgrupaMajora {
+  code        String @id @db.VarChar(2)
+  name        String @db.VarChar(500)
+  grupaMajora String @db.VarChar(1)
+
+  grupa    GrupaMajora  @relation(fields: [grupaMajora], references: [code])
+  grupe    GrupaMinora[]
+  ocupatii Ocupatie[]
+
+  @@map("subgrupe_majore")
+}
+
+/// Grupa minoră (3 digits)
+model GrupaMinora {
+  code           String @id @db.VarChar(3)
+  name           String @db.VarChar(500)
+  subgrupaMajora String @db.VarChar(2)
+
+  subgrupa SubgrupaMajora @relation(fields: [subgrupaMajora], references: [code])
+  grupe    GrupaDeBaza[]
+  ocupatii Ocupatie[]
+
+  @@map("grupe_minore")
+}
+
+/// Grupa de bază (4 digits)
+model GrupaDeBaza {
+  code        String @id @db.VarChar(4)
+  name        String @db.VarChar(500)
+  grupaMinora String @db.VarChar(3)
+
+  grupa    GrupaMinora @relation(fields: [grupaMinora], references: [code])
+  ocupatii Ocupatie[]
+
+  @@map("grupe_de_baza")
+}
+
+/// Individual occupation (6 digits)
+model Ocupatie {
+  code           String @id @db.VarChar(6)
+  name           String @db.VarChar(500)
+  nameNormalized String @db.VarChar(500) // diacritics-stripped lowercase for search
+  grupaMajora    String @db.VarChar(1)
+  subgrupaMajora String @db.VarChar(2)
+  grupaMinora    String @db.VarChar(3)
+  grupaDeBaza    String @db.VarChar(4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  grupa    GrupaMajora    @relation(fields: [grupaMajora], references: [code])
+  subgrupa SubgrupaMajora @relation(fields: [subgrupaMajora], references: [code])
+  minor    GrupaMinora    @relation(fields: [grupaMinora], references: [code])
+  baza     GrupaDeBaza    @relation(fields: [grupaDeBaza], references: [code])
+
+  @@index([nameNormalized])
+  @@index([grupaDeBaza])
+  @@index([grupaMinora])
+  @@map("ocupatii")
+}
