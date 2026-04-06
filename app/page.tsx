@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import SearchBar from "@/components/SearchBar";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
 export default async function HomePage() {
   // Get live count from DB
   let occupationCount = "4.500+";
